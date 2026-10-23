@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detetive de Triângulos</title>
+<style>
+:root{--ink:#1f2a44;--bg:#f6f8fb;--ac:#0f766e;--ln:#cbd5e1;--pn:#ffffff;--ok:#166534;--no:#9a3412}
+@media(prefers-color-scheme:dark){:root{--ink:#e8edf6;--bg:#141b2b;--ac:#5eead4;--ln:#334155;--pn:#1c2539;--ok:#86efac;--no:#fdba74}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
+main{max-width:720px;margin:auto}
+h1{font-size:1.5rem;margin:0 0 8px}
+h2{font-size:1.15rem;margin:0 0 6px}
+svg{width:100%;height:auto;border-radius:14px;display:block;margin:10px 0;background:#dbeafe;touch-action:none}
+.v{cursor:grab}
+.v:focus-visible{stroke:#0b2a3a;stroke-width:5}
+#pn,#rd,.box{background:var(--pn);border:2px solid var(--ln);border-radius:14px;padding:14px 16px;margin:10px 0}
+#rd p{margin:2px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+input{font:inherit;width:140px;color:var(--ink);background:var(--bg);border:2px solid var(--ln);border-radius:10px;padding:8px 12px}
+button{font:inherit;font-weight:bold;padding:9px 16px;border-radius:10px;border:2px solid var(--ac);background:none;color:var(--ink);cursor:pointer}
+button.on,.go{background:var(--ac);color:var(--bg)}
+input:focus-visible,button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.ok{color:var(--ok)}.no{color:var(--no)}
+small{opacity:.75}
+</style></head><body><main>
+<h1>Detetive de Triângulos</h1>
+<div class="row"><button id="m1" class="on">Construir triângulos</button><button id="m2">Ângulo que falta</button></div>
+
+<section id="s1">
+<div id="pn"><h2 id="mt"></h2><p id="mq"></p></div>
+<svg id="sv" viewBox="0 0 600 400" role="img" aria-label="Plano com um triângulo ABC. Arraste os vértices ou use as setas do teclado."></svg>
+<div id="rd" aria-live="off"></div>
+<div class="row"><button class="go" id="ck">Conferir</button><button id="rp">Voltar ao início</button></div>
+<p id="fb" aria-live="polite"></p>
+<small>Arraste os pontos A, B e C. Se usar o teclado, foque um ponto e use as setas. Cada quadradinho vale 1 unidade.</small>
+</section>
+
+<section id="s2" hidden>
+<div id="pn2"></div>
+<small>Em todo triângulo, a soma dos ângulos internos é 180°.</small>
+</section>
+<p><small>Esta página não coleta nem guarda nenhum dado.</small></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const MS=[
+{t:"Construa um triângulo retângulo",f:i=>i.ang==='retângulo',h:"Forme um canto reto, como o canto de uma folha de papel."},
+{t:"Construa um triângulo obtusângulo",f:i=>i.ang==='obtusângulo',h:"Um dos ângulos precisa ser maior que 90°. Abra bem um vértice, sem deixar os três pontos alinhados."},
+{t:"Construa um triângulo acutângulo",f:i=>i.ang==='acutângulo',h:"Os três ângulos precisam ser menores que 90°."},
+{t:"Construa um triângulo isósceles (com só dois lados iguais)",f:i=>i.lados==='isósceles',h:"Dois lados precisam ter o mesmo comprimento, e o terceiro, outro."},
+{t:"Construa um triângulo equilátero",f:i=>i.lados==='equilátero',h:"Os três lados iguais. Os três ângulos ficam com 60°."},
+{t:"Construa um triângulo escaleno e retângulo",f:i=>i.lados==='escaleno'&&i.ang==='retângulo',h:"Um ângulo de 90° e os três lados com comprimentos diferentes."},
+{t:"Construa um triângulo isósceles e retângulo",f:i=>i.lados==='isósceles'&&i.ang==='retângulo',h:"Um ângulo de 90° com os dois lados que o formam iguais."},
+{t:"Construa um triângulo isósceles e obtusângulo",f:i=>i.lados==='isósceles'&&i.ang==='obtusângulo',h:"Dois lados iguais e um ângulo maior que 90° entre eles."}
+];
+const P0=()=>[{x:150,y:300},{x:450,y:300},{x:300,y:100}];
+let P=P0(),mi=0,dr=null;
+const cl=v=>Math.max(20,Math.min(380,v));
+const sv=$('sv');
+let g='';
+for(let x=20;x<600;x+=20)g+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="400" stroke="#8fa8c4" stroke-width=".6"/>';
+for(let y=20;y<400;y+=20)g+='<line x1="0" y1="'+y+'" x2="600" y2="'+y+'" stroke="#8fa8c4" stroke-width=".6"/>';
+g+='<polygon id="pg" fill="#f59e0b" fill-opacity=".4" stroke="#0b2a3a" stroke-width="3" stroke-linejoin="round"/>';
+[0,1,2].forEach(i=>{g+='<circle class="v" id="c'+i+'" data-i="'+i+'" r="16" fill="#0f766e" stroke="#fff" stroke-width="3" tabindex="0" role="button" aria-label="Ponto '+'ABC'[i]+'"/><text id="t'+i+'" font-size="16" font-weight="bold" text-anchor="middle" fill="#0b2a3a" pointer-events="none" style="paint-order:stroke;stroke:#fff;stroke-width:4px">'+'ABC'[i]+'</text>'});
+sv.innerHTML=g;
+function info(){
+  const[A,B,C]=P,d=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y);
+  const a=d(B,C),b=d(C,A),c=d(A,B);
+  const ar=Math.abs((B.x-A.x)*(C.y-A.y)-(C.x-A.x)*(B.y-A.y))/2;
+  if(ar<60)return null;
+  const an=(x,y,z)=>Math.acos((y*y+z*z-x*x)/(2*y*z))*180/Math.PI;
+  const a1=an(a,b,c),a2=an(b,c,a),a3=an(c,a,b);
+  const eq=(x,y)=>Math.abs(x-y)<=0.03*Math.max(x,y);
+  const lados=eq(a,b)&&eq(b,c)?'equilátero':(eq(a,b)||eq(b,c)||eq(a,c))?'isósceles':'escaleno';
+  const mx=Math.max(a1,a2,a3);
+  const ang=Math.abs(mx-90)<=2?'retângulo':mx>90?'obtusângulo':'acutângulo';
+  return{a,b,c,A:a1,B:a2,C:a3,lados,ang};
+}
+function upd(){
+  $('pg').setAttribute('points',P.map(p=>p.x+','+p.y).join(' '));
+  P.forEach((p,i)=>{
+    $('c'+i).setAttribute('cx',p.x);$('c'+i).setAttribute('cy',p.y);
+    $('t'+i).setAttribute('x',p.x);$('t'+i).setAttribute('y',p.y-24);
+  });
+  const i=info(),u=v=>(v/20).toFixed(1).replace('.',',');
+  $('rd').innerHTML=i?
+    '<p>Lados: a = '+u(i.a)+' | b = '+u(i.b)+' | c = '+u(i.c)+'</p>'
+    +'<p>Ângulos: A = '+i.A.toFixed(0)+'° | B = '+i.B.toFixed(0)+'° | C = '+i.C.toFixed(0)+'° (A + B + C = 180°)</p>'
+    +'<p><b>Seu triângulo é '+i.lados+' e '+i.ang+'.</b></p>'
+    :'<p>Os três pontos estão alinhados, então não formam um triângulo. Afaste um deles.</p>';
+}
+function mis(){
+  $('mt').textContent='Missão '+(mi+1)+' de '+MS.length;
+  $('mq').textContent=MS[mi].t+'.';
+  $('fb').textContent='';
+}
+sv.addEventListener('pointerdown',e=>{
+  const c=e.target.closest('.v');
+  if(c){dr=+c.dataset.i;sv.setPointerCapture(e.pointerId);e.preventDefault()}
+});
+sv.addEventListener('pointermove',e=>{
+  if(dr===null)return;
+  const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const q=pt.matrixTransform(sv.getScreenCTM().inverse());
+  P[dr]={x:Math.max(20,Math.min(580,Math.round(q.x/10)*10)),y:cl(Math.round(q.y/10)*10)};
+  upd();
+});
+sv.addEventListener('pointerup',()=>dr=null);
+sv.addEventListener('keydown',e=>{
+  const c=e.target.closest('.v');
+  const m={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];
+  if(!c||!m)return;
+  e.preventDefault();
+  const i=+c.dataset.i;
+  P[i]={x:Math.max(20,Math.min(580,P[i].x+m[0])),y:cl(P[i].y+m[1])};
+  upd();
+});
+$('ck').onclick=()=>{
+  if(mi>=MS.length){return}
+  const i=info(),fb=$('fb');
+  if(!i){fb.className='no';fb.textContent='Primeiro forme um triângulo: os três pontos não podem ficar alinhados.';return}
+  if(MS[mi].f(i)){
+    mi++;
+    if(mi>=MS.length){fb.className='ok';$('mt').textContent='Parabéns, detetive!';$('mq').textContent='Você resolveu todas as missões de triângulos.';fb.textContent='Quer treinar mais? Experimente o modo "Ângulo que falta".';return}
+    fb.className='ok';fb.textContent='Correto! Próxima missão.';
+    const msg=fb.textContent;mis();fb.className='ok';fb.textContent=msg;
+  }else{
+    fb.className='no';
+    fb.textContent='Ainda não: seu triângulo é '+i.lados+' e '+i.ang+'. Dica: '+MS[mi].h;
+  }
+};
+$('rp').onclick=()=>{P=P0();upd();$('fb').textContent=''};
+
+let qs=[],qi=0,er=0;
+function nq(){
+  qs=[];
+  for(let k=0;k<5;k++)qs.push({a:10*(3+Math.floor(Math.random()*5)),b:10*(2+Math.floor(Math.random()*6))});
+  qi=0;er=0;qshow();
+}
+function qshow(){
+  const q=qs[qi];
+  $('pn2').innerHTML='<div class="box"><h2>Pergunta '+(qi+1)+' de 5</h2><p>Em um triângulo, dois ângulos medem '+q.a+'° e '+q.b+'°. Quanto mede o terceiro ângulo?</p><div class="row"><input id="an" inputmode="numeric" aria-label="Sua resposta em graus" autocomplete="off"><button class="go" id="ck2">Conferir</button></div><p id="fb2" aria-live="polite"></p></div>';
+  $('ck2').onclick=qcheck;
+  $('an').onkeydown=e=>{if(e.key==='Enter')qcheck()};
+}
+function qcheck(){
+  const v=Number($('an').value.replace(',','.')),q=qs[qi],f=$('fb2');
+  if($('an').value.trim()===''||isNaN(v)){f.className='no';f.textContent='Digite um número.';return}
+  if(v===180-q.a-q.b){
+    qi++;
+    if(qi>=5){$('pn2').innerHTML='<div class="box"><h2>Terminou!</h2><p class="ok">Você acertou as 5 perguntas com '+er+' erro'+(er===1?'':'s')+'.</p><button class="go" id="again">Jogar de novo</button></div>';$('again').onclick=nq;return}
+    qshow();
+  }else{
+    er++;f.className='no';f.textContent='Ainda não. Dica: some os dois ângulos e subtraia de 180°.';$('an').select();
+  }
+}
+function mode(n){
+  $('s1').hidden=n!==1;$('s2').hidden=n!==2;
+  $('m1').className=n===1?'on':'';$('m2').className=n===2?'on':'';
+  if(n===2&&!qs.length)nq();
+}
+$('m1').onclick=()=>mode(1);
+$('m2').onclick=()=>mode(2);
+upd();mis();
+</script></body></html>
