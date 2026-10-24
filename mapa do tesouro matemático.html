@@ -2,96 +2,163 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mapa do Tesouro Matemático</title>
 <style>
-:root{--ink:#1f2a44;--bg:#f6f8fb;--ac:#0f766e;--ln:#cbd5e1;--pn:#ffffff;--ok:#166534;--no:#9a3412}
-@media(prefers-color-scheme:dark){:root{--ink:#e8edf6;--bg:#141b2b;--ac:#5eead4;--ln:#334155;--pn:#1c2539;--ok:#86efac;--no:#fdba74}}
+:root{--texto:#1f2a44;--fundo:#f6f8fb;--destaque:#0f766e;--borda:#cbd5e1;--painel:#ffffff;--certo:#166534;--erro:#9a3412}
+@media(prefers-color-scheme:dark){:root{--texto:#e8edf6;--fundo:#141b2b;--destaque:#5eead4;--borda:#334155;--painel:#1c2539;--certo:#86efac;--erro:#fdba74}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
+body{margin:0;background:var(--fundo);color:var(--texto);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
 main{max-width:720px;margin:auto}
 h1{font-size:1.5rem;margin:0 0 4px}
 h2{font-size:1.15rem;margin:0 0 6px}
 svg{width:100%;height:auto;border-radius:14px;display:block;margin:12px 0}
-.loc{cursor:pointer}
-.loc:focus-visible circle.m{stroke:#fff;stroke-width:4}
-#pn{background:var(--pn);border:2px solid var(--ln);border-radius:14px;padding:16px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-input{font:inherit;width:160px;color:var(--ink);background:var(--bg);border:2px solid var(--ln);border-radius:10px;padding:8px 12px}
-button{font:inherit;font-weight:bold;padding:9px 16px;border-radius:10px;border:2px solid var(--ac);background:none;color:var(--ink);cursor:pointer}
-.go{background:var(--ac);color:var(--bg)}
-input:focus-visible,button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
-#fb{margin:10px 0 0;min-height:1.6em}
-.ok{color:var(--ok)}.no{color:var(--no)}
+.local{cursor:pointer}
+.local:focus-visible circle.marcador{stroke:#fff;stroke-width:4}
+#painel{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:16px}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input{font:inherit;width:160px;color:var(--texto);background:var(--fundo);border:2px solid var(--borda);border-radius:10px;padding:8px 12px}
+button{font:inherit;font-weight:bold;padding:9px 16px;border-radius:10px;border:2px solid var(--destaque);background:none;color:var(--texto);cursor:pointer}
+.botao-principal{background:var(--destaque);color:var(--fundo)}
+input:focus-visible,button:focus-visible{outline:3px solid var(--destaque);outline-offset:2px}
+#retorno{margin:10px 0 0;min-height:1.6em}
+.certo{color:var(--certo)}.erro{color:var(--erro)}
 small{opacity:.75}
 </style></head><body><main>
 <h1>Mapa do Tesouro Matemático</h1>
-<p id="st"></p>
-<svg id="map" viewBox="0 0 600 390" role="group" aria-label="Mapa da ilha com seis missões"></svg>
-<div id="pn"><p id="tip">Clique em um ponto do mapa para começar a missão. Resolva as cinco primeiras para abrir a Caverna do Tesouro.</p></div>
-<p><button id="rs">Reiniciar jogo</button></p>
+<p id="placar"></p>
+<svg id="mapa" viewBox="0 0 600 390" role="group" aria-label="Mapa da ilha com seis missões"></svg>
+<div id="painel"><p>Clique em um ponto do mapa para começar a missão. Resolva as cinco primeiras para abrir a Caverna do Tesouro.</p></div>
+<p><button id="reiniciar">Reiniciar jogo</button></p>
 <small>Esta página não coleta nem guarda nenhum dado.</small>
 </main>
 <script>
-const M=[
-{n:"Praia da Soma",x:110,y:285,t:"Dois barcos chegam à praia: um traz 245 caixas e o outro 378. Quantas caixas chegaram ao todo?",a:623,h:"Some unidades, depois dezenas e centenas."},
-{n:"Floresta das Frações",x:150,y:165,t:"Um explorador andou 1/4 da trilha de manhã e mais 2/4 à tarde. Que fração da trilha ele já percorreu? (escreva 3/4 ou em decimal)",a:0.75,h:"As partes são iguais: some só os numeradores."},
-{n:"Montanha dos Percentuais",x:330,y:100,t:"Uma mochila custa R$ 80 e está com 25% de desconto. Quanto ela custa agora, em reais?",a:60,h:"25% de 80 é 80 ÷ 4. Subtraia esse valor de 80."},
-{n:"Lago da Área",x:450,y:190,t:"Um lago retangular mede 12 m por 7 m. Qual é a área, em m²?",a:84,h:"Área do retângulo = base × altura."},
-{n:"Vila das Equações",x:300,y:270,t:"A senha do portão é o valor de x em 3x + 5 = 26. Qual é x?",a:7,h:"Tire 5 dos dois lados e depois divida por 3."},
-{n:"Caverna do Tesouro",x:500,y:300,t:"Última prova! Calcule: 2³ + 4 × 5 − 6 ÷ 2",a:25,h:"Potência primeiro, depois × e ÷, e por fim + e −."}
+// A última missão (a caverna) só abre depois que todas as outras forem resolvidas.
+const MISSOES = [
+  { nome: 'Praia da Soma', x: 110, y: 285, enunciado: 'Dois barcos chegam à praia: um traz 245 caixas e o outro 378. Quantas caixas chegaram ao todo?', resposta: 623, dica: 'Some unidades, depois dezenas e centenas.' },
+  { nome: 'Floresta das Frações', x: 150, y: 165, enunciado: 'Um explorador andou 1/4 da trilha de manhã e mais 2/4 à tarde. Que fração da trilha ele já percorreu? (escreva 3/4 ou em decimal)', resposta: 0.75, dica: 'As partes são iguais: some só os numeradores.' },
+  { nome: 'Montanha dos Percentuais', x: 330, y: 100, enunciado: 'Uma mochila custa R$ 80 e está com 25% de desconto. Quanto ela custa agora, em reais?', resposta: 60, dica: '25% de 80 é 80 ÷ 4. Subtraia esse valor de 80.' },
+  { nome: 'Lago da Área', x: 450, y: 190, enunciado: 'Um lago retangular mede 12 m por 7 m. Qual é a área, em m²?', resposta: 84, dica: 'Área do retângulo = base × altura.' },
+  { nome: 'Vila das Equações', x: 300, y: 270, enunciado: 'A senha do portão é o valor de x em 3x + 5 = 26. Qual é x?', resposta: 7, dica: 'Tire 5 dos dois lados e depois divida por 3.' },
+  { nome: 'Caverna do Tesouro', x: 500, y: 300, enunciado: 'Última prova! Calcule: 2³ + 4 × 5 − 6 ÷ 2', resposta: 25, dica: 'Potência primeiro, depois × e ÷, e por fim + e −.' }
 ];
-let solved=new Set(),erros=0,cur=null;
-const $=id=>document.getElementById(id);
-const svgNS='http://www.w3.org/2000/svg';
-function locked(i){return i===5&&solved.size<5}
-function draw(){
-  let s='<rect width="600" height="390" fill="#2a6f97"/>';
-  s+='<path d="M60 250Q40 150 140 100Q250 30 380 50Q520 70 560 180Q590 290 480 340Q340 370 200 345Q90 330 60 250Z" fill="#8fbf7f" stroke="#e8d9a8" stroke-width="8"/>';
-  s+='<polyline points="'+M.map(m=>m.x+','+m.y).join(' ')+'" fill="none" stroke="#5b3a1e" stroke-width="3" stroke-dasharray="7 7" opacity=".6"/>';
-  M.forEach((m,i)=>{
-    const ok=solved.has(i),lk=locked(i);
-    const fill=ok?'#16a34a':lk?'#6b7280':'#f59e0b';
-    s+='<g class="loc" tabindex="0" role="button" data-i="'+i+'" aria-label="'+m.n+(ok?', concluída':lk?', bloqueada':'')+'">'
-     +'<circle class="m" cx="'+m.x+'" cy="'+m.y+'" r="20" fill="'+fill+'" stroke="#0b2a3a" stroke-width="2"/>'
-     +'<text x="'+m.x+'" y="'+(m.y+6)+'" text-anchor="middle" font-size="18" font-weight="bold" fill="#0b2a3a">'+(ok?'✓':lk?'?':i+1)+'</text>'
-     +'<text x="'+m.x+'" y="'+(m.y+40)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="#0b2a3a" style="paint-order:stroke;stroke:#fff;stroke-width:4px">'+m.n+'</text></g>';
+const INDICE_DA_CAVERNA = MISSOES.length - 1;
+const MISSOES_PARA_ABRIR_A_CAVERNA = MISSOES.length - 1;
+const TOLERANCIA_DA_RESPOSTA = 1e-6;
+const COR_CONCLUIDA = '#16a34a';
+const COR_BLOQUEADA = '#6b7280';
+const COR_DISPONIVEL = '#f59e0b';
+
+const elemento = id => document.getElementById(id);
+
+let missoesResolvidas = new Set();
+let erros = 0;
+let missaoAberta = null;
+
+const estaBloqueada = indice => indice === INDICE_DA_CAVERNA && missoesResolvidas.size < MISSOES_PARA_ABRIR_A_CAVERNA;
+const plural = (quantidade, palavra) => quantidade + ' ' + palavra + (quantidade === 1 ? '' : 's');
+
+// ---------- Desenho do mapa ----------
+
+function desenharIlha() {
+  return '<rect width="600" height="390" fill="#2a6f97"/>'
+    + '<path d="M60 250Q40 150 140 100Q250 30 380 50Q520 70 560 180Q590 290 480 340Q340 370 200 345Q90 330 60 250Z" fill="#8fbf7f" stroke="#e8d9a8" stroke-width="8"/>'
+    + '<polyline points="' + MISSOES.map(m => m.x + ',' + m.y).join(' ') + '" fill="none" stroke="#5b3a1e" stroke-width="3" stroke-dasharray="7 7" opacity=".6"/>';
+}
+
+function desenharLocal(missao, indice) {
+  const concluida = missoesResolvidas.has(indice);
+  const bloqueada = estaBloqueada(indice);
+  const cor = concluida ? COR_CONCLUIDA : bloqueada ? COR_BLOQUEADA : COR_DISPONIVEL;
+  const simbolo = concluida ? '✓' : bloqueada ? '?' : indice + 1;
+  const situacao = concluida ? ', concluída' : bloqueada ? ', bloqueada' : '';
+  return '<g class="local" tabindex="0" role="button" data-indice="' + indice + '" aria-label="' + missao.nome + situacao + '">'
+    + '<circle class="marcador" cx="' + missao.x + '" cy="' + missao.y + '" r="20" fill="' + cor + '" stroke="#0b2a3a" stroke-width="2"/>'
+    + '<text x="' + missao.x + '" y="' + (missao.y + 6) + '" text-anchor="middle" font-size="18" font-weight="bold" fill="#0b2a3a">' + simbolo + '</text>'
+    + '<text x="' + missao.x + '" y="' + (missao.y + 40) + '" text-anchor="middle" font-size="14" font-weight="bold" fill="#0b2a3a" style="paint-order:stroke;stroke:#fff;stroke-width:4px">' + missao.nome + '</text></g>';
+}
+
+function ativarLocais() {
+  document.querySelectorAll('.local').forEach(local => {
+    const abrir = () => abrirMissao(+local.dataset.indice);
+    local.onclick = abrir;
+    local.onkeydown = evento => {
+      if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); abrir(); }
+    };
   });
-  $('map').innerHTML=s;
-  $('st').textContent='Missões concluídas: '+solved.size+' de '+M.length;
-  document.querySelectorAll('.loc').forEach(g=>{
-    const open=()=>openM(+g.dataset.i);
-    g.onclick=open;
-    g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
-  });
 }
-function openM(i){
-  const m=M[i];cur=i;
-  if(locked(i)){$('pn').innerHTML='<h2>Caverna trancada</h2><p>Resolva as cinco primeiras missões para abrir a caverna.</p>';return}
-  if(solved.has(i)){$('pn').innerHTML='<h2>'+m.n+'</h2><p class="ok">Missão concluída! Escolha outro ponto do mapa.</p>';return}
-  $('pn').innerHTML='<h2>'+m.n+'</h2><p>'+m.t+'</p><div class="row"><input id="an" inputmode="decimal" aria-label="Sua resposta" autocomplete="off"><button class="go" id="ck">Conferir</button></div><p id="fb" aria-live="polite"></p>';
-  $('ck').onclick=check;
-  $('an').onkeydown=e=>{if(e.key==='Enter')check()};
-  $('an').focus();
+
+function desenharMapa() {
+  elemento('mapa').innerHTML = desenharIlha() + MISSOES.map(desenharLocal).join('');
+  elemento('placar').textContent = 'Missões concluídas: ' + missoesResolvidas.size + ' de ' + MISSOES.length;
+  ativarLocais();
 }
-function val(s){
-  s=s.trim().replace(',','.');
-  if(s.includes('/')){const[p,q]=s.split('/').map(Number);return q?p/q:NaN}
-  return s===''?NaN:Number(s);
+
+// ---------- Painel da missão ----------
+
+function mostrarNoPainel(html) {
+  elemento('painel').innerHTML = html;
 }
-function check(){
-  const v=val($('an').value),m=M[cur];
-  if(isNaN(v)){$('fb').className='no';$('fb').textContent='Digite um número para responder.';return}
-  if(Math.abs(v-m.a)<1e-6){
-    solved.add(cur);draw();
-    const fim=solved.size===M.length;
-    $('pn').innerHTML=fim
-      ?'<h2>Tesouro encontrado!</h2><p class="ok">Você completou todas as missões com '+erros+' erro'+(erros===1?'':'s')+'. Parabéns, explorador matemático!</p>'
-      :'<h2>'+m.n+'</h2><p class="ok">Resposta certa! '+(solved.size===5?'A Caverna do Tesouro foi destrancada.':'Escolha o próximo ponto do mapa.')+'</p>';
-  }else{
-    erros++;
-    $('fb').className='no';
-    $('fb').textContent='Ainda não. Dica: '+m.h;
-    $('an').select();
+
+function abrirMissao(indice) {
+  const missao = MISSOES[indice];
+  missaoAberta = indice;
+  if (estaBloqueada(indice)) return mostrarNoPainel('<h2>Caverna trancada</h2><p>Resolva as cinco primeiras missões para abrir a caverna.</p>');
+  if (missoesResolvidas.has(indice)) return mostrarNoPainel('<h2>' + missao.nome + '</h2><p class="certo">Missão concluída! Escolha outro ponto do mapa.</p>');
+
+  mostrarNoPainel('<h2>' + missao.nome + '</h2><p>' + missao.enunciado + '</p>'
+    + '<div class="linha"><input id="resposta" inputmode="decimal" aria-label="Sua resposta" autocomplete="off"><button class="botao-principal" id="conferir">Conferir</button></div>'
+    + '<p id="retorno" aria-live="polite"></p>');
+  elemento('conferir').onclick = conferirResposta;
+  elemento('resposta').onkeydown = evento => { if (evento.key === 'Enter') conferirResposta(); };
+  elemento('resposta').focus();
+}
+
+// Aceita inteiros, decimais com vírgula ou ponto e frações como "3/4".
+function lerResposta(texto) {
+  const limpo = texto.trim().replace(',', '.');
+  if (limpo.includes('/')) {
+    const [numerador, denominador] = limpo.split('/').map(Number);
+    return denominador ? numerador / denominador : NaN;
   }
+  return limpo === '' ? NaN : Number(limpo);
 }
-$('rs').onclick=()=>{solved=new Set();erros=0;cur=null;draw();$('pn').innerHTML='<p>Clique em um ponto do mapa para começar a missão.</p>'};
-draw();
+
+function mostrarRetorno(classe, texto) {
+  elemento('retorno').className = classe;
+  elemento('retorno').textContent = texto;
+}
+
+function comemorarAcerto(missao) {
+  const terminouOJogo = missoesResolvidas.size === MISSOES.length;
+  if (terminouOJogo) {
+    return mostrarNoPainel('<h2>Tesouro encontrado!</h2><p class="certo">Você completou todas as missões com ' + plural(erros, 'erro') + '. Parabéns, explorador matemático!</p>');
+  }
+  const proximoPasso = missoesResolvidas.size === MISSOES_PARA_ABRIR_A_CAVERNA
+    ? 'A Caverna do Tesouro foi destrancada.'
+    : 'Escolha o próximo ponto do mapa.';
+  mostrarNoPainel('<h2>' + missao.nome + '</h2><p class="certo">Resposta certa! ' + proximoPasso + '</p>');
+}
+
+function conferirResposta() {
+  const resposta = lerResposta(elemento('resposta').value);
+  const missao = MISSOES[missaoAberta];
+  if (isNaN(resposta)) return mostrarRetorno('erro', 'Digite um número para responder.');
+  if (Math.abs(resposta - missao.resposta) < TOLERANCIA_DA_RESPOSTA) {
+    missoesResolvidas.add(missaoAberta);
+    desenharMapa();
+    return comemorarAcerto(missao);
+  }
+  erros++;
+  mostrarRetorno('erro', 'Ainda não. Dica: ' + missao.dica);
+  elemento('resposta').select();
+}
+
+function reiniciarJogo() {
+  missoesResolvidas = new Set();
+  erros = 0;
+  missaoAberta = null;
+  desenharMapa();
+  mostrarNoPainel('<p>Clique em um ponto do mapa para começar a missão.</p>');
+}
+
+elemento('reiniciar').onclick = reiniciarJogo;
+desenharMapa();
 </script></body></html>

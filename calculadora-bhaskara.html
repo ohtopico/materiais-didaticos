@@ -2,110 +2,276 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Calculadora de Bhaskara passo a passo</title>
 <style>
-:root{--ink:#1f2a44;--bg:#f6f8fb;--ac:#0f766e;--ln:#cbd5e1;--pn:#ffffff;--ok:#166534;--no:#9a3412;--hi:#fef3c7}
-@media(prefers-color-scheme:dark){:root{--ink:#e8edf6;--bg:#141b2b;--ac:#5eead4;--ln:#334155;--pn:#1c2539;--ok:#86efac;--no:#fdba74;--hi:#3b3516}}
+:root{--texto:#1f2a44;--fundo:#f6f8fb;--destaque:#0f766e;--borda:#cbd5e1;--painel:#ffffff;--certo:#166534;--erro:#9a3412;--realce:#fef3c7}
+@media(prefers-color-scheme:dark){:root{--texto:#e8edf6;--fundo:#141b2b;--destaque:#5eead4;--borda:#334155;--painel:#1c2539;--certo:#86efac;--erro:#fdba74;--realce:#3b3516}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
+body{margin:0;background:var(--fundo);color:var(--texto);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
 main{max-width:720px;margin:auto}
 h1{font-size:1.5rem;margin:0 0 6px}
 h2{font-size:1.1rem;margin:0 0 6px}
-.box{background:var(--pn);border:2px solid var(--ln);border-radius:14px;padding:14px 16px;margin:12px 0}
-.fm{font-size:1.2rem;text-align:center;background:var(--hi);border-radius:10px;padding:8px;margin:8px 0}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.caixa{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px 16px;margin:12px 0}
+.formula{font-size:1.2rem;text-align:center;background:var(--realce);border-radius:10px;padding:8px;margin:8px 0}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
 label{display:flex;align-items:center;gap:6px;font-weight:bold}
-input{font:inherit;width:90px;color:var(--ink);background:var(--bg);border:2px solid var(--ln);border-radius:10px;padding:8px 10px;text-align:center}
-button{font:inherit;font-weight:bold;padding:9px 16px;border-radius:10px;border:2px solid var(--ac);background:none;color:var(--ink);cursor:pointer}
-.go{background:var(--ac);color:var(--bg)}
-input:focus-visible,button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+input{font:inherit;width:90px;color:var(--texto);background:var(--fundo);border:2px solid var(--borda);border-radius:10px;padding:8px 10px;text-align:center}
+button{font:inherit;font-weight:bold;padding:9px 16px;border-radius:10px;border:2px solid var(--destaque);background:none;color:var(--texto);cursor:pointer}
+.botao-principal{background:var(--destaque);color:var(--fundo)}
+input:focus-visible,button:focus-visible{outline:3px solid var(--destaque);outline-offset:2px}
 button:disabled{opacity:.45;cursor:default}
-.ln{font-family:Consolas,"Courier New",monospace;font-size:1.05rem;margin:4px 0;padding-left:10px;border-left:4px solid var(--ac);overflow-x:auto;white-space:nowrap}
-.st{animation:in .3s}
-@keyframes in{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.st{animation:none}}
-.no{color:var(--no);font-weight:bold}.ok{color:var(--ok);font-weight:bold}
+.conta{font-family:Consolas,"Courier New",monospace;font-size:1.05rem;margin:4px 0;padding-left:10px;border-left:4px solid var(--destaque);overflow-x:auto;white-space:nowrap}
+.passo{animation:aparecer .3s}
+@keyframes aparecer{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.passo{animation:none}}
+.erro{color:var(--erro);font-weight:bold}.certo{color:var(--certo);font-weight:bold}
 small{opacity:.75}
 </style></head><body><main>
 <h1>Calculadora de Bhaskara passo a passo</h1>
-<div class="box">
+<div class="caixa">
 <p style="margin:0">Para uma equação do 2º grau <b>ax² + bx + c = 0</b>:</p>
-<div class="fm">Δ = b² − 4ac &nbsp;&nbsp;e&nbsp;&nbsp; x = (−b ± √Δ) / 2a</div>
-<div class="row">
-<label>a <input id="a" inputmode="decimal" value="1" aria-label="Coeficiente a"></label>
-<label>b <input id="b" inputmode="decimal" value="-5" aria-label="Coeficiente b"></label>
-<label>c <input id="c" inputmode="decimal" value="6" aria-label="Coeficiente c"></label>
-<button class="go" id="go">Calcular</button>
+<div class="formula">Δ = b² − 4ac &nbsp;&nbsp;e&nbsp;&nbsp; x = (−b ± √Δ) / 2a</div>
+<div class="linha">
+<label>a <input id="coeficiente-a" inputmode="decimal" value="1" aria-label="Coeficiente a"></label>
+<label>b <input id="coeficiente-b" inputmode="decimal" value="-5" aria-label="Coeficiente b"></label>
+<label>c <input id="coeficiente-c" inputmode="decimal" value="6" aria-label="Coeficiente c"></label>
+<button class="botao-principal" id="calcular">Calcular</button>
 </div>
-<div class="row"><small>Exemplos:</small>
-<button class="ex" data-v="1,-5,6">x² − 5x + 6</button>
-<button class="ex" data-v="1,-6,9">x² − 6x + 9</button>
-<button class="ex" data-v="1,2,5">x² + 2x + 5</button>
-<button class="ex" data-v="1,2,-5">x² + 2x − 5</button>
+<div class="linha"><small>Exemplos:</small>
+<button class="exemplo" data-coeficientes="1,-5,6">x² − 5x + 6</button>
+<button class="exemplo" data-coeficientes="1,-6,9">x² − 6x + 9</button>
+<button class="exemplo" data-coeficientes="1,2,5">x² + 2x + 5</button>
+<button class="exemplo" data-coeficientes="1,2,-5">x² + 2x − 5</button>
 </div>
-<p id="er" class="no" aria-live="polite"></p>
+<p id="mensagem-erro" class="erro" aria-live="polite"></p>
 </div>
-<div id="out" aria-live="polite"></div>
-<div class="row" id="ctl" hidden><button class="go" id="nx">Próximo passo</button><button id="all">Mostrar tudo</button></div>
+<div id="passos" aria-live="polite"></div>
+<div class="linha" id="controles" hidden><button class="botao-principal" id="proximo-passo">Próximo passo</button><button id="mostrar-tudo">Mostrar tudo</button></div>
 <small>Use ponto ou vírgula para decimais. Esta página não coleta nem guarda nenhum dado.</small>
 </main>
 <script>
-const $=id=>document.getElementById(id);
-const f=n=>String(Math.round(n*10000)/10000).replace('.',',').replace('-','−');
-const p=n=>n<0?'('+f(n)+')':f(n);
-const rd=id=>{const s=$(id).value.trim().replace(',','.');return s===''?NaN:Number(s)};
-function term(n,v,first){
-  if(n===0)return'';
-  const m=Math.abs(n),t=(m===1&&v)?v:f(m)+v;
-  return first?(n<0?'−':'')+t:' '+(n<0?'−':'+')+' '+t;
+const CAMPOS_DOS_COEFICIENTES = ['coeficiente-a', 'coeficiente-b', 'coeficiente-c'];
+const PRECISAO_EXIBIDA = 10000;      // números aparecem com até 4 casas decimais
+const PRECISAO_DO_DELTA = 1e8;       // evita resíduos como 0,30000000000000004 no Δ
+const TOLERANCIA_RAIZ_EXATA = 1e-9;
+const TOLERANCIA_DE_ZERO = 1e-3;
+
+const elemento = id => document.getElementById(id);
+
+// ---------- Formatação ----------
+
+function formatarNumero(numero) {
+  const arredondado = Math.round(numero * PRECISAO_EXIBIDA) / PRECISAO_EXIBIDA;
+  return String(arredondado).replace('.', ',').replace('-', '−');
 }
-const eqs=(a,b,c)=>term(a,'x²',true)+term(b,'x',false)+term(c,'',false)+' = 0';
-let S=[],shown=0;
-function build(a,b,c){
-  S=[];
-  const L=(...r)=>r.map(x=>'<div class="ln">'+x+'</div>').join('');
-  const D=Math.round((b*b-4*a*c)*1e8)/1e8;
-  S.push({t:'1. Identifique os coeficientes',h:L('Equação: '+eqs(a,b,c),'a = '+f(a)+'  (acompanha x²)','b = '+f(b)+'  (acompanha x)','c = '+f(c)+'  (número sozinho)')});
-  S.push({t:'2. Calcule o discriminante Δ',h:L('Δ = b² − 4 · a · c','Δ = '+p(b)+'² − 4 · '+p(a)+' · '+p(c),'Δ = '+f(b*b)+' − '+p(4*a*c),'Δ = '+f(D))+'<p><small>Cuidado: um número negativo elevado ao quadrado fica positivo.</small></p>'});
-  if(D<0){
-    S.push({t:'3. Interprete o Δ',h:L('Δ = '+f(D)+' é menor que zero')+'<p>Não existe raiz quadrada real de número negativo. <b>A equação não tem raízes reais.</b></p>'});
-    S.push({t:'4. Conclusão',h:L('S = { }  (conjunto vazio)')});
-    return;
+
+function formatarEntreParenteses(numero) {
+  return numero < 0 ? '(' + formatarNumero(numero) + ')' : formatarNumero(numero);
+}
+
+function formatarTermo(coeficiente, variavel, ehPrimeiroTermo) {
+  if (coeficiente === 0) return '';
+  const modulo = Math.abs(coeficiente);
+  const textoDoTermo = (modulo === 1 && variavel) ? variavel : formatarNumero(modulo) + variavel;
+  if (ehPrimeiroTermo) return (coeficiente < 0 ? '−' : '') + textoDoTermo;
+  return ' ' + (coeficiente < 0 ? '−' : '+') + ' ' + textoDoTermo;
+}
+
+function escreverEquacao(a, b, c) {
+  return formatarTermo(a, 'x²', true) + formatarTermo(b, 'x', false) + formatarTermo(c, '', false) + ' = 0';
+}
+
+function linhasDeConta(...contas) {
+  return contas.map(conta => '<div class="conta">' + conta + '</div>').join('');
+}
+
+function observacao(texto) {
+  return '<p><small>' + texto + '</small></p>';
+}
+
+// ---------- Matemática ----------
+
+function calcularDelta(a, b, c) {
+  return Math.round((b * b - 4 * a * c) * PRECISAO_DO_DELTA) / PRECISAO_DO_DELTA;
+}
+
+function analisarRaizDoDelta(delta) {
+  const raiz = Math.sqrt(delta);
+  const ehExata = Math.abs(raiz - Math.round(raiz)) < TOLERANCIA_RAIZ_EXATA;
+  return { valor: raiz, ehExata, valorExato: ehExata ? Math.round(raiz) : raiz };
+}
+
+function calcularRaizes(a, b, delta, raizDoDelta) {
+  const x1 = (-b + raizDoDelta) / (2 * a);
+  const x2 = (-b - raizDoDelta) / (2 * a);
+  return delta === 0 ? [x1] : [x1, x2];
+}
+
+// ---------- Passos da resolução ----------
+
+function passoIdentificarCoeficientes(a, b, c) {
+  return {
+    titulo: '1. Identifique os coeficientes',
+    conteudo: linhasDeConta(
+      'Equação: ' + escreverEquacao(a, b, c),
+      'a = ' + formatarNumero(a) + '  (acompanha x²)',
+      'b = ' + formatarNumero(b) + '  (acompanha x)',
+      'c = ' + formatarNumero(c) + '  (número sozinho)')
+  };
+}
+
+function passoCalcularDelta(a, b, c, delta) {
+  return {
+    titulo: '2. Calcule o discriminante Δ',
+    conteudo: linhasDeConta(
+      'Δ = b² − 4 · a · c',
+      'Δ = ' + formatarEntreParenteses(b) + '² − 4 · ' + formatarEntreParenteses(a) + ' · ' + formatarEntreParenteses(c),
+      'Δ = ' + formatarNumero(b * b) + ' − ' + formatarEntreParenteses(4 * a * c),
+      'Δ = ' + formatarNumero(delta))
+      + observacao('Cuidado: um número negativo elevado ao quadrado fica positivo.')
+  };
+}
+
+function passosSemRaizReal(delta) {
+  return [
+    {
+      titulo: '3. Interprete o Δ',
+      conteudo: linhasDeConta('Δ = ' + formatarNumero(delta) + ' é menor que zero')
+        + '<p>Não existe raiz quadrada real de número negativo. <b>A equação não tem raízes reais.</b></p>'
+    },
+    { titulo: '4. Conclusão', conteudo: linhasDeConta('S = { }  (conjunto vazio)') }
+  ];
+}
+
+function passoInterpretarDelta(delta) {
+  const quantidadeDeRaizes = delta === 0
+    ? 'Δ é zero: a equação tem <b>uma raiz real</b> (as duas raízes são iguais).'
+    : 'Δ é positivo: a equação tem <b>duas raízes reais diferentes</b>.';
+  return {
+    titulo: '3. Interprete o Δ',
+    conteudo: linhasDeConta('Δ = ' + formatarNumero(delta))
+      + '<p>' + quantidadeDeRaizes + '</p>'
+      + observacao('Δ &gt; 0: duas raízes. Δ = 0: uma raiz. Δ &lt; 0: nenhuma raiz real.')
+  };
+}
+
+function passoSubstituirNaFormula(a, b, delta, raiz) {
+  const textoDaRaiz = raiz.ehExata ? formatarNumero(raiz.valorExato) : '√' + formatarNumero(delta);
+  const explicacaoDaRaiz = raiz.ehExata
+    ? '√' + formatarNumero(delta) + ' = ' + formatarNumero(raiz.valorExato) + ', pois ' + formatarNumero(raiz.valorExato) + '² = ' + formatarNumero(delta) + '.'
+    : '√' + formatarNumero(delta) + ' não é exata: usamos o valor aproximado ' + formatarNumero(raiz.valor) + '.';
+  return {
+    titulo: '4. Substitua na fórmula',
+    conteudo: linhasDeConta(
+      'x = (−b ± √Δ) / (2 · a)',
+      'x = (−' + formatarEntreParenteses(b) + ' ± √' + formatarNumero(delta) + ') / (2 · ' + formatarEntreParenteses(a) + ')',
+      'x = (' + formatarNumero(-b) + ' ± ' + textoDaRaiz + ') / ' + formatarNumero(2 * a))
+      + observacao(explicacaoDaRaiz)
+  };
+}
+
+function passoCalcularRaizes(a, b, delta, raiz, raizes) {
+  const menosB = formatarNumero(-b);
+  const doisA = formatarNumero(2 * a);
+  if (delta === 0) {
+    return { titulo: '5. Calcule as raízes', conteudo: linhasDeConta('x = ' + menosB + ' / ' + doisA, 'x = ' + formatarNumero(raizes[0])) };
   }
-  const r=Math.sqrt(D),perfect=Math.abs(r-Math.round(r))<1e-9,rr=perfect?Math.round(r):r;
-  const rt=perfect?f(rr):'√'+f(D)+' ≈ '+f(r);
-  S.push({t:'3. Interprete o Δ',h:L('Δ = '+f(D))+'<p>'+(D===0?'Δ é zero: a equação tem <b>uma raiz real</b> (as duas raízes são iguais).':'Δ é positivo: a equação tem <b>duas raízes reais diferentes</b>.')+'</p><p><small>Δ &gt; 0: duas raízes. Δ = 0: uma raiz. Δ &lt; 0: nenhuma raiz real.</small></p>'});
-  S.push({t:'4. Substitua na fórmula',h:L('x = (−b ± √Δ) / (2 · a)','x = (−'+p(b)+' ± √'+f(D)+') / (2 · '+p(a)+')','x = ('+f(-b)+' ± '+(perfect?f(rr):'√'+f(D))+') / '+f(2*a))+(perfect?'<p><small>√'+f(D)+' = '+f(rr)+', pois '+f(rr)+'² = '+f(D)+'.</small></p>':'<p><small>√'+f(D)+' não é exata: usamos o valor aproximado '+f(r)+'.</small></p>')});
-  const x1=(-b+r)/(2*a),x2=(-b-r)/(2*a),ap=perfect?' = ':' ≈ ';
-  let h5;
-  if(D===0)h5=L('x = '+f(-b)+' / '+f(2*a),'x = '+f(x1));
-  else h5=L('x₁ = ('+f(-b)+' + '+f(r)+') / '+f(2*a)+' = '+f(-b+r)+' / '+f(2*a)+ap+f(x1),'x₂ = ('+f(-b)+' − '+f(r)+') / '+f(2*a)+' = '+f(-b-r)+' / '+f(2*a)+ap+f(x2));
-  S.push({t:'5. Calcule as raízes',h:h5});
-  const xs=D===0?[x1]:[x1,x2];
-  const ver=xs.map((x,i)=>{
-    const v=a*x*x+b*x+c,z=Math.abs(v)<1e-3;
-    return L('a·x² + b·x + c com x = '+f(x),p(a)+' · '+p(x)+'² + '+p(b)+' · '+p(x)+' + '+p(c)+' = '+(z?(perfect?'0':'≈ 0'):f(v)));
+  const sinalDeResultado = raiz.ehExata ? ' = ' : ' ≈ ';
+  const contaDaRaiz = (indice, sinal, numerador, resultado) =>
+    'x' + indice + ' = (' + menosB + ' ' + sinal + ' ' + formatarNumero(raiz.valor) + ') / ' + doisA
+    + ' = ' + formatarNumero(numerador) + ' / ' + doisA + sinalDeResultado + formatarNumero(resultado);
+  return {
+    titulo: '5. Calcule as raízes',
+    conteudo: linhasDeConta(
+      contaDaRaiz('₁', '+', -b + raiz.valor, raizes[0]),
+      contaDaRaiz('₂', '−', -b - raiz.valor, raizes[1]))
+  };
+}
+
+function passoConferirResultado(a, b, c, raiz, raizes) {
+  const conferencias = raizes.map(x => {
+    const resultado = a * x * x + b * x + c;
+    const ehZero = Math.abs(resultado) < TOLERANCIA_DE_ZERO;
+    const textoDoResultado = ehZero ? (raiz.ehExata ? '0' : '≈ 0') : formatarNumero(resultado);
+    return linhasDeConta(
+      'a·x² + b·x + c com x = ' + formatarNumero(x),
+      formatarEntreParenteses(a) + ' · ' + formatarEntreParenteses(x) + '² + ' + formatarEntreParenteses(b) + ' · '
+        + formatarEntreParenteses(x) + ' + ' + formatarEntreParenteses(c) + ' = ' + textoDoResultado);
   }).join('');
-  S.push({t:'6. Confira o resultado',h:ver+'<p><small>Se a conta der zero, a raiz está certa.'+(perfect?'':' Com raízes aproximadas, o resultado fica muito perto de zero.')+'</small></p>'});
-  S.push({t:'7. Conclusão',h:L('S = { '+(D===0?f(x1):f(x1)+' ; '+f(x2))+' }')});
+  const avisoDeAproximacao = raiz.ehExata ? '' : ' Com raízes aproximadas, o resultado fica muito perto de zero.';
+  return {
+    titulo: '6. Confira o resultado',
+    conteudo: conferencias + observacao('Se a conta der zero, a raiz está certa.' + avisoDeAproximacao)
+  };
 }
-function render(){
-  $('out').innerHTML=S.map((s,i)=>'<div class="box st" '+(i<shown?'':'hidden')+'><h2>'+s.t+'</h2>'+s.h+'</div>').join('');
-  $('ctl').hidden=!S.length;
-  $('nx').disabled=shown>=S.length;
-  $('nx').textContent=shown>=S.length?'Fim do passo a passo':'Próximo passo';
+
+function passoConclusao(raizes) {
+  return { titulo: '7. Conclusão', conteudo: linhasDeConta('S = { ' + raizes.map(formatarNumero).join(' ; ') + ' }') };
 }
-function calc(){
-  const a=rd('a'),b=rd('b'),c=rd('c');
-  $('er').textContent='';
-  if([a,b,c].some(isNaN)){$('er').textContent='Preencha a, b e c com números.';return}
-  if(a===0){$('er').textContent='Se a = 0, a equação deixa de ser do 2º grau. Escolha um a diferente de zero.';return}
-  build(a,b,c);shown=1;render();
+
+function montarPassos(a, b, c) {
+  const delta = calcularDelta(a, b, c);
+  const passosIniciais = [passoIdentificarCoeficientes(a, b, c), passoCalcularDelta(a, b, c, delta)];
+  if (delta < 0) return passosIniciais.concat(passosSemRaizReal(delta));
+
+  const raiz = analisarRaizDoDelta(delta);
+  const raizes = calcularRaizes(a, b, delta, raiz.valor);
+  return passosIniciais.concat([
+    passoInterpretarDelta(delta),
+    passoSubstituirNaFormula(a, b, delta, raiz),
+    passoCalcularRaizes(a, b, delta, raiz, raizes),
+    passoConferirResultado(a, b, c, raiz, raizes),
+    passoConclusao(raizes)
+  ]);
 }
-$('go').onclick=calc;
-['a','b','c'].forEach(i=>$(i).onkeydown=e=>{if(e.key==='Enter')calc()});
-document.querySelectorAll('.ex').forEach(bt=>bt.onclick=()=>{
-  const v=bt.dataset.v.split(',');$('a').value=v[0];$('b').value=v[1];$('c').value=v[2];calc();
+
+// ---------- Tela ----------
+
+let passos = [];
+let passosVisiveis = 0;
+
+function mostrarPassos() {
+  elemento('passos').innerHTML = passos.map((passo, indice) =>
+    '<div class="caixa passo" ' + (indice < passosVisiveis ? '' : 'hidden') + '><h2>' + passo.titulo + '</h2>' + passo.conteudo + '</div>'
+  ).join('');
+  const terminou = passosVisiveis >= passos.length;
+  elemento('controles').hidden = !passos.length;
+  elemento('proximo-passo').disabled = terminou;
+  elemento('proximo-passo').textContent = terminou ? 'Fim do passo a passo' : 'Próximo passo';
+}
+
+function lerCoeficiente(id) {
+  const texto = elemento(id).value.trim().replace(',', '.');
+  return texto === '' ? NaN : Number(texto);
+}
+
+function mostrarErro(texto) {
+  elemento('mensagem-erro').textContent = texto;
+}
+
+function calcular() {
+  const [a, b, c] = CAMPOS_DOS_COEFICIENTES.map(lerCoeficiente);
+  mostrarErro('');
+  if ([a, b, c].some(isNaN)) return mostrarErro('Preencha a, b e c com números.');
+  if (a === 0) return mostrarErro('Se a = 0, a equação deixa de ser do 2º grau. Escolha um a diferente de zero.');
+  passos = montarPassos(a, b, c);
+  passosVisiveis = 1;
+  mostrarPassos();
+}
+
+function usarExemplo(botao) {
+  botao.dataset.coeficientes.split(',').forEach((valor, indice) => {
+    elemento(CAMPOS_DOS_COEFICIENTES[indice]).value = valor;
+  });
+  calcular();
+}
+
+elemento('calcular').onclick = calcular;
+CAMPOS_DOS_COEFICIENTES.forEach(id => {
+  elemento(id).onkeydown = evento => { if (evento.key === 'Enter') calcular(); };
 });
-$('nx').onclick=()=>{if(shown<S.length){shown++;render()}};
-$('all').onclick=()=>{shown=S.length;render()};
+document.querySelectorAll('.exemplo').forEach(botao => { botao.onclick = () => usarExemplo(botao); });
+elemento('proximo-passo').onclick = () => {
+  if (passosVisiveis < passos.length) { passosVisiveis++; mostrarPassos(); }
+};
+elemento('mostrar-tudo').onclick = () => { passosVisiveis = passos.length; mostrarPassos(); };
 </script></body></html>
