@@ -2,54 +2,99 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Montador de prompts P.A.C.T.O.</title>
 <style>
-:root{--ink:#1f2a44;--bg:#f6f8fb;--ac:#0f766e;--ln:#cbd5e1;--pn:#ffffff}
-@media(prefers-color-scheme:dark){:root{--ink:#e8edf6;--bg:#141b2b;--ac:#5eead4;--ln:#334155;--pn:#1c2539}}
+:root{--texto:#1f2a44;--fundo:#f6f8fb;--destaque:#0f766e;--borda:#cbd5e1;--painel:#ffffff}
+@media(prefers-color-scheme:dark){:root{--texto:#e8edf6;--fundo:#141b2b;--destaque:#5eead4;--borda:#334155;--painel:#1c2539}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
+body{margin:0;background:var(--fundo);color:var(--texto);font:18px/1.6 "Trebuchet MS",Verdana,sans-serif;padding:20px}
 main{max-width:680px;margin:auto}
 h1{font-size:1.5rem;margin:0 0 4px}
 label{display:block;font-weight:bold;margin:14px 0 4px}
 label span{font-weight:normal;opacity:.75;font-size:.9rem}
-input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--pn);border:2px solid var(--ln);border-radius:10px;padding:10px 12px}
-input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
-#out{min-height:140px;margin-top:6px}
-.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-button{font:inherit;font-weight:bold;padding:10px 16px;border-radius:10px;border:2px solid var(--ac);background:none;color:var(--ink);cursor:pointer}
-.go{background:var(--ac);color:var(--bg)}
-.warn{margin-top:16px;padding:10px 14px;border:2px solid var(--ln);border-radius:10px;font-size:.95rem}
+input,textarea{width:100%;font:inherit;color:var(--texto);background:var(--painel);border:2px solid var(--borda);border-radius:10px;padding:10px 12px}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--destaque);outline-offset:2px}
+#prompt-pronto{min-height:140px;margin-top:6px}
+.linha{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+button{font:inherit;font-weight:bold;padding:10px 16px;border-radius:10px;border:2px solid var(--destaque);background:none;color:var(--texto);cursor:pointer}
+.botao-principal{background:var(--destaque);color:var(--fundo)}
+.aviso{margin-top:16px;padding:10px 14px;border:2px solid var(--borda);border-radius:10px;font-size:.95rem}
 </style></head><body><main>
 <h1>Montador de prompts P.A.C.T.O.</h1>
 <p>Preencha os campos. O prompt se monta sozinho, pronto para copiar.</p>
-<label for="p">Papel <span>quem a IA deve ser</span></label>
-<input id="p" placeholder="professor experiente de Matemática">
-<label for="a">Alvo <span>ano, turma e realidade da escola</span></label>
-<input id="a" placeholder="6º ano, 30 alunos, aula de 50 minutos, sem internet">
-<label for="c">Comando <span>a tarefa, com verbo claro</span></label>
-<input id="c" placeholder="crie um plano de aula sobre introdução a frações">
-<label for="t">Tom e formato <span>como entregar</span></label>
-<input id="t" placeholder="tabela com etapa, tempo, atividade e material">
-<label for="o">Observações <span>restrições e o que evitar</span></label>
-<input id="o" placeholder="não invente fontes e avise o que preciso conferir">
-<label for="out">Seu prompt</label>
-<textarea id="out" readonly></textarea>
-<div class="row"><button class="go" id="cp">Copiar prompt</button><button id="ex">Preencher com exemplo</button><button id="cl">Limpar</button></div>
-<p id="msg" aria-live="polite"></p>
-<div class="warn">Antes de enviar: não inclua nomes, laudos ou dados de alunos. Descreva a turma, não as pessoas. Esta página não coleta nenhum dado.</div>
+<label for="papel">Papel <span>quem a IA deve ser</span></label>
+<input id="papel" placeholder="professor experiente de Matemática">
+<label for="alvo">Alvo <span>ano, turma e realidade da escola</span></label>
+<input id="alvo" placeholder="6º ano, 30 alunos, aula de 50 minutos, sem internet">
+<label for="comando">Comando <span>a tarefa, com verbo claro</span></label>
+<input id="comando" placeholder="crie um plano de aula sobre introdução a frações">
+<label for="formato">Tom e formato <span>como entregar</span></label>
+<input id="formato" placeholder="tabela com etapa, tempo, atividade e material">
+<label for="observacoes">Observações <span>restrições e o que evitar</span></label>
+<input id="observacoes" placeholder="não invente fontes e avise o que preciso conferir">
+<label for="prompt-pronto">Seu prompt</label>
+<textarea id="prompt-pronto" readonly></textarea>
+<div class="linha"><button class="botao-principal" id="copiar">Copiar prompt</button><button id="preencher-exemplo">Preencher com exemplo</button><button id="limpar">Limpar</button></div>
+<p id="mensagem" aria-live="polite"></p>
+<div class="aviso">Antes de enviar: não inclua nomes, laudos ou dados de alunos. Descreva a turma, não as pessoas. Esta página não coleta nenhum dado.</div>
 </main>
 <script>
-const ids=['p','a','c','t','o'],$=id=>document.getElementById(id);
-const L={p:'Atue como ',a:'Contexto: ',c:'Tarefa: ',t:'Formato: ',o:'Observações: '};
-function build(){
-  $('out').value=ids.filter(k=>$(k).value.trim()).map(k=>L[k]+$(k).value.trim().replace(/[.]$/,'')+'.').join('\n');
+// Cada letra do método P.A.C.T.O. vira uma linha do prompt, nesta ordem.
+const PARTES_DO_PROMPT = [
+  { campo: 'papel', inicio: 'Atue como ' },
+  { campo: 'alvo', inicio: 'Contexto: ' },
+  { campo: 'comando', inicio: 'Tarefa: ' },
+  { campo: 'formato', inicio: 'Formato: ' },
+  { campo: 'observacoes', inicio: 'Observações: ' }
+];
+
+const elemento = id => document.getElementById(id);
+const campos = PARTES_DO_PROMPT.map(parte => elemento(parte.campo));
+const promptPronto = elemento('prompt-pronto');
+const mensagem = elemento('mensagem');
+
+function semPontoFinal(texto) {
+  return texto.replace(/[.]$/, '');
 }
-ids.forEach(k=>$(k).addEventListener('input',build));
-$('ex').onclick=()=>{ids.forEach(k=>$(k).value=$(k).placeholder);build()};
-$('cl').onclick=()=>{ids.forEach(k=>$(k).value='');build();$('msg').textContent=''};
-$('cp').onclick=()=>{
-  if(!$('out').value){$('msg').textContent='Preencha pelo menos um campo.';return}
-  $('out').select();
-  const ok=()=>$('msg').textContent='Copiado! Cole na sua IA e refine o resultado.';
-  if(navigator.clipboard)navigator.clipboard.writeText($('out').value).then(ok,()=>{document.execCommand('copy');ok()});
-  else{document.execCommand('copy');ok()}
-};
+
+function montarPrompt() {
+  promptPronto.value = PARTES_DO_PROMPT
+    .map(parte => ({ inicio: parte.inicio, resposta: elemento(parte.campo).value.trim() }))
+    .filter(parte => parte.resposta)
+    .map(parte => parte.inicio + semPontoFinal(parte.resposta) + '.')
+    .join('\n');
+}
+
+function preencherComExemplo() {
+  campos.forEach(campo => { campo.value = campo.placeholder; });
+  montarPrompt();
+}
+
+function limpar() {
+  campos.forEach(campo => { campo.value = ''; });
+  montarPrompt();
+  mensagem.textContent = '';
+}
+
+function copiarComComandoAntigo() {
+  document.execCommand('copy');
+}
+
+function copiarPrompt() {
+  if (!promptPronto.value) {
+    mensagem.textContent = 'Preencha pelo menos um campo.';
+    return;
+  }
+  promptPronto.select();
+  const avisarQueCopiou = () => { mensagem.textContent = 'Copiado! Cole na sua IA e refine o resultado.'; };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(promptPronto.value).then(avisarQueCopiou, () => { copiarComComandoAntigo(); avisarQueCopiou(); });
+  } else {
+    copiarComComandoAntigo();
+    avisarQueCopiou();
+  }
+}
+
+campos.forEach(campo => campo.addEventListener('input', montarPrompt));
+elemento('preencher-exemplo').onclick = preencherComExemplo;
+elemento('limpar').onclick = limpar;
+elemento('copiar').onclick = copiarPrompt;
 </script></body></html>
